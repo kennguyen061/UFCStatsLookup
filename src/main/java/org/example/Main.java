@@ -4,11 +4,11 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.html.*;
 import com.opencsv.CSVWriter;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 // Press Shift twice to open the Search Everywhere dialog and type `show whitespaces`,
 // then press Enter. You can now see whitespace characters in your code.
@@ -17,6 +17,15 @@ import java.util.stream.Collectors;
 public class Main {
     record Fighter(String name, int knockdowns, int strikes, int takedowns, int submissions, String weightclass, String winmethod, String cardname, String eventlocation, String eventdate){};
     public static void main(String[] args) throws IOException {
+        File outFile = new File("stats.csv");
+
+        // delete old csv file if exists
+        if (outFile.exists()) {
+            System.out.println("Old stats.csv file exists. Removing...");
+            outFile.delete();
+        }
+
+
         WebClient client = new WebClient();
 
         //Turn off JS and CSS for the webclient to work
@@ -25,15 +34,19 @@ public class Main {
 
 
         //Starts at the initial page
-        HtmlPage searchpage = client.getPage("http://ufcstats.com/statistics/events/completed");
+        HtmlPage searchpage = client.getPage("http://ufcstats.com/statistics/events/completed?page=all");
 
+        //Initializes the list of fighters
         List<Fighter> fighterlist = new ArrayList<Fighter>();
-        //TODO: Make the webscraper click on every single event to scrape every card, then every page href
+
+        //Gets all hyperlinks if it contains a card
         for(HtmlAnchor anchor: searchpage.getAnchors()) {
             if(anchor.asNormalizedText().contains("UFC")) {
+                //Opens up the card page
                 System.out.println(anchor.asNormalizedText());
                 HtmlPage cardpage = anchor.click();
                 try {
+                    //Adds all statistics to the list
                     List<Fighter> newlist = parseResults(cardpage);
                     fighterlist.addAll(newlist);
                     for(Fighter fighter: newlist) {
@@ -42,7 +55,7 @@ public class Main {
 
                 }
                 catch (Exception e) {
-                    System.out.println("Card has not happened yet");
+                    System.out.println("Card has not happened yet or stats incomplete (for much older cards)");
                 }
 
             }
@@ -52,8 +65,12 @@ public class Main {
 
 
         //Exports to CSV
+
+        //Creates csv headings
         String[] headings = {"Name", "Knockdowns", "Strikes", "Takedowns", "Submission Attempts", "Weight Class", "Win Method", "Event Name", "Event Location", "Event Date"};
-        try (CSVWriter writer = new CSVWriter(new FileWriter("test.csv"))) {
+
+        //Writes the fighterlist to csv
+        try (CSVWriter writer = new CSVWriter(new FileWriter("stats.csv"))) {
             writer.writeNext(headings, false);
             for(Fighter fighter: fighterlist) {
                 String[] newfighter = {fighter.name, Integer.toString(fighter.knockdowns), Integer.toString(fighter.strikes), Integer.toString(fighter.takedowns), Integer.toString(fighter.submissions), fighter.weightclass, fighter.winmethod, fighter.cardname, fighter.eventlocation, fighter.eventdate};
@@ -67,6 +84,7 @@ public class Main {
 
     //TODO: In Future get more stats in the full page (control time, stike accuracy %)
     private static List<Fighter> parseResults(HtmlPage cardpage) {
+        //Gets the cardname, location, and eventdate
         DomElement element = cardpage.getFirstByXPath("//span[@class='b-content__title-highlight']");
         String cardname = element.getTextContent().trim();
         System.out.println(cardname);
@@ -78,6 +96,7 @@ public class Main {
         System.out.println(eventdate);
 
 
+        //Adds respective statistics to the record's' attributes
         HtmlTable table = (HtmlTable) cardpage.getByXPath("/html/body/section/div/div/table").get(0);
         List<Fighter> fighters = new ArrayList<Fighter>();
         for(final HtmlTableRow row: table.getBodies().get(0).getRows()) {
@@ -97,6 +116,8 @@ public class Main {
                     eventlocation,
                     eventdate
             );
+
+            //Two fighters are in one row so we have to split them up into two then add the second after the first
             String knockdowns2 = row.getCell(2).getTextContent().trim().split("\\s+")[1];
             String strikes2 = row.getCell(3).getTextContent().trim().split("\\s+")[1];
             String takedowns2 = row.getCell(4).getTextContent().trim().split("\\s+")[1];
