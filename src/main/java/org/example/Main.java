@@ -37,7 +37,7 @@ public class Main {
         HtmlPage searchpage = client.getPage("http://ufcstats.com/statistics/events/completed?page=all");
 
         //Initializes the list of fighters
-        List<Fighter> fighterlist = new ArrayList<Fighter>();
+        List<Fighter> fighterlist = new ArrayList<>();
 
         //Gets all hyperlinks if it contains a card
         for(HtmlAnchor anchor: searchpage.getAnchors()) {
@@ -98,7 +98,7 @@ public class Main {
 
         //Adds respective statistics to the record's' attributes
         HtmlTable table = (HtmlTable) cardpage.getByXPath("/html/body/section/div/div/table").get(0);
-        List<Fighter> fighters = new ArrayList<Fighter>();
+        List<Fighter> fighters = new ArrayList<>();
         for(final HtmlTableRow row: table.getBodies().get(0).getRows()) {
             String knockdowns1 = row.getCell(2).getTextContent().trim().split("\\s+")[0];
             String strikes1 = row.getCell(3).getTextContent().trim().split("\\s+")[0];
