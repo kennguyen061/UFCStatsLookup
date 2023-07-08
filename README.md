@@ -21,6 +21,6 @@ UFCStats does not provide an official API and data sets on Kaggle are not kept u
 ## Pictures
 ![1](first.jpg)
 ![2](second.JPG)
-![3](third.JPG)
+![3](third.jpg)
 ![4](fourth.JPG)
 ![5](fifth.JPG)
